@@ -19,13 +19,21 @@ pub mod citizenship_verifier {
         proof_account.name = proof_data.name;
         proof_account.dob = proof_data.dob;
         proof_account.zk_proof = proof_data.zk_proof;
+        proof_account.bump = ctx.bumps.proof_account; // Store the bump
         Ok(())
     }
 }
 
 #[derive(Accounts)]
+#[instruction(proof_data: ProofData)]
 pub struct StoreProof<'info> {
-    #[account(init, payer = user, space = 1244)]  // Updated space allocation
+    #[account(
+        init,
+        payer = user,
+        space = 8 + 4 + 50 + 4 + 20 + 4 + 100 + 4 + 10 + 4 + 1024 + 1, // Discriminator + fields + bump
+        seeds = [b"proof", user.key().as_ref(), proof_data.user_id.as_bytes()],
+        bump
+    )]
     pub proof_account: Account<'info, ProofAccount>,
     #[account(mut)]
     pub user: Signer<'info>,
@@ -34,11 +42,12 @@ pub struct StoreProof<'info> {
 
 #[account]
 pub struct ProofAccount {
-    pub user_id: String,        // 4 + 50
+    pub user_id: String,            // 4 + 50
     pub citizenship_number: String, // 4 + 20
-    pub name: String,           // 4 + 100
-    pub dob: String,            // 4 + 10
-    pub zk_proof: Vec<u8>,      // 4 + 1024
+    pub name: String,               // 4 + 100
+    pub dob: String,                // 4 + 10
+    pub zk_proof: Vec<u8>,          // 4 + 1024
+    pub bump: u8,                   // 1
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
